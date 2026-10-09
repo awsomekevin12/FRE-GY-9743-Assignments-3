@@ -36,11 +36,40 @@ class ProductDisplayVisitor(ProductVisitor):
         #TODO 5: Use _common_items, then collect these fields in order:
         # Effective Date, Termination Date, Accrual Basis, Payment Date,
         # Business Day Convention, Holiday Convention.
-        raise NotImplementedError("TODO 5: Fixed cashflow display visitor")
+
+        # Shared rows (type, notional, currency, direction) come from the base helper,
+        # so this handler only adds what is specific to a fixed-accrual cashflow.
+        self._common_items(product)
+
+        # Format values the same way serialize() does, so the display and the
+        # stored contract read identically.
+        self.nvps_ += [
+            ["Effective Date", product.effective_date.ISO()],
+            ["Termination Date", product.termination_date.ISO()],
+            ["Accrual Basis", product.accrual_basis.value_str],
+            ["Payment Date", product.payment_date.ISO()],
+            ["Business Day Convention", product.business_day_convention.value_str],
+            ["Holiday Convention", product.holiday_convention.value_str],
+        ]
+        return self.nvps_
 
     @visit.register
     def _(self, product: ProductOvernightIndexCashflow):
         #TODO 6: Use _common_items, then collect these fields in order:
         # Effective Date, Termination Date, ON Index, Compounding Method,
         # Spread, Payment Date.
-        raise NotImplementedError("TODO 6: Overnight cashflow display visitor")
+
+        # Same idea as the fixed handler: shared rows first, then the overnight-specific ones.
+        self._common_items(product)
+
+        # Show the index by its key (e.g. SOFR-1B) rather than the QuantLib object,
+        # and the spread as the raw annual decimal it was entered as.
+        self.nvps_ += [
+            ["Effective Date", product.effective_date.ISO()],
+            ["Termination Date", product.termination_date.ISO()],
+            ["ON Index", product.on_index_str_],
+            ["Compounding Method", product.compounding_method.to_string().upper()],
+            ["Spread", product.spread],
+            ["Payment Date", product.payment_date.ISO()],
+        ]
+        return self.nvps_
